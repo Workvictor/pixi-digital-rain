@@ -1,5 +1,4 @@
 import { Canvas2D } from './Canvas2D';
-
 const incrementCode = (i = 0, index = 0) => i + index;
 const getChar = (i = 0) => String.fromCharCode(i);
 const createBMP = ({
@@ -14,10 +13,12 @@ const createBMP = ({
   canvas.ctx.fillText(char, fontSize / 2, fontSize / 2);
   return canvas.output;
 };
-export class Hirogana {
-  static startCode = 12353;
-  static endCode = 12438;
-  constructor({
+export class Charset {
+  static Hirogana = {
+    startCode: 12353,
+    endCode: 12438
+  };
+  constructor(charset = Charset.Hirogana, {
     fontSize = 18,
     fillStyle = '#46b843',
     fontFamily = 'Arial'
@@ -25,10 +26,11 @@ export class Hirogana {
     this.props = {
       fontFamily,
       fontSize,
-      fillStyle
+      fillStyle,
+      charset
     };
-    this.chars = new Array(Hirogana.endCode + 1 - Hirogana.startCode)
-      .fill(Hirogana.startCode)
+    this.chars = new Array(charset.endCode + 1 - charset.startCode)
+      .fill(charset.startCode)
       .map(incrementCode)
       .map(getChar);
     this.bmp = this.chars
