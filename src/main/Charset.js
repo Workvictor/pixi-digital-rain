@@ -1,40 +1,73 @@
 import { Canvas2D } from './Canvas2D';
-const incrementCode = (i = 0, index = 0) => i + index;
-const getChar = (i = 0) => String.fromCharCode(i);
-const createBMP = ({
-  char,
-  options: { fontSize = 18, fillStyle = '#46b843', fontFamily = 'Arial' }
-}) => {
-  const canvas = new Canvas2D(fontSize, fontSize, {
-    fontSize,
-    fillStyle,
-    fontFamily
-  });
-  canvas.ctx.fillText(char, fontSize / 2, fontSize / 2);
-  return canvas.output;
-};
+import { Texture, BaseTexture } from 'pixi.js';
+
+function createTexture(canvas = document.createElement('canvas')) {
+  return new Texture(new BaseTexture.fromCanvas(canvas));
+}
+
 export class Charset {
+  static style = {
+    fontSize: 18,
+    fillStyle: '#fff',
+    fontFamily: 'Arial'
+  };
   static Hirogana = {
     startCode: 12353,
     endCode: 12438
   };
-  constructor(charset = Charset.Hirogana, {
-    fontSize = 18,
-    fillStyle = '#46b843',
-    fontFamily = 'Arial'
+  constructor({
+    charset = Charset.Hirogana,
+    fontSize = Charset.style.fontSize,
+    fillStyle = Charset.style.fillStyle,
+    fontFamily = Charset.style.fontFamily
   } = {}) {
-    this.props = {
-      fontFamily,
+    let i = charset.startCode;
+    let spriteIndex = 0;
+    
+    const end = charset.endCode;
+    const textures = [];
+    const shadowBlur = 10;
+    const cellSize = fontSize + shadowBlur / 2;
+
+    const spriteSheet = new Canvas2D(cellSize * (end - i), cellSize, {
       fontSize,
       fillStyle,
-      charset
+      fontFamily
+    });
+    spriteSheet.ctx.shadowColor = fillStyle;
+    spriteSheet.ctx.shadowBlur = shadowBlur;
+
+    const getCharImg = (index = 0) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = cellSize;
+      canvas.height = cellSize;
+      const ctx = canvas.getContext('2d');
+
+      ctx.drawImage(
+        spriteSheet.output,
+        index * cellSize,
+        0,
+        cellSize,
+        cellSize,
+        0,
+        0,
+        cellSize,
+        cellSize
+      );
+
+      return canvas;
     };
-    this.chars = new Array(charset.endCode + 1 - charset.startCode)
-      .fill(charset.startCode)
-      .map(incrementCode)
-      .map(getChar);
-    this.bmp = this.chars
-      .map(char => ({ char, options: this.props }))
-      .map(createBMP);
+
+    for (i; i <= end; i++) {
+      spriteSheet.ctx.fillText(
+        String.fromCharCode(i),
+        spriteIndex * cellSize + cellSize / 2,
+        cellSize / 2
+      );
+      textures.push(createTexture(getCharImg(spriteIndex)));
+      spriteIndex++;
+    }
+
+    return textures;
   }
 }
