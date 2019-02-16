@@ -20,4 +20,8 @@ export class Canvas2D {
     this.ctx.textBaseline = textBaseline;
     this.ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   }
+
+  clear() {
+    this.ctx.clearRect(0, 0, this.output.width, this.output.height);
+  }
 }

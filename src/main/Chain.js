@@ -1,69 +1,97 @@
 import * as PIXI from 'pixi.js';
-import { Hirogana } from './Hirogana';
-import { Canvas2D } from './Canvas2D';
+import { Char } from './Char';
 
 export class Chain {
+  static tint = 0x15b519;
+  static tintHighlight = 0xe2fe70;
   constructor({
-    charSet = new Hirogana(),
-    refreshTime = 500,
-    maxLength = 15,
-    startX = 0,
-    startY = 0,
-    cols = 16,
-    rows = 9,
-    cellSize = 18
+    textures,
+    size = 18,
+    gridHeight = 0,
+    stepSizePerFrame = 0.25 + Math.random() * 0.5,
+    growTimeout = 10 + Math.random() * 5,
+    getRandomX = () => 0,
+    getRandomY = () => 0,
+    onRemove = () => null,
+    getEmptyId = () => 0
   } = {}) {
-    this.props = {
-      charSet,
-      refreshTime,
-      maxLength
-    };
-    this.stepSize = charSet.props.fontSize;
-    this.tail = this.generate();
-    this.sprite = new PIXI.Sprite(this.texture());
-    this.sprite.x = startX;
-    this.sprite.y = startY;
-    this.chainStart = Date.now();
+    this.onRemove = onRemove;
+    this.getEmptyId = getEmptyId;
+    this.textures = textures;
+    this.gridHeight = gridHeight;
+    this.getRandomX = getRandomX;
+    this.getRandomY = getRandomY;
+    this.shouldRemove = false;
+    this.stepSizePerFrameInitial = stepSizePerFrame;
+    this.stepSizePerFrame = stepSizePerFrame;
+    this.size = size;
+    this.growTimeout = growTimeout;
+    this.maxLength = Math.floor(gridHeight / size);
+    this.chars = [];
+    this.tail = new PIXI.Container();
+    this.init();
+    this.growCount = 0;
+    this.ticker = new PIXI.ticker.Ticker();
+    this.ticker.add(this.dropChain);
+    this.ticker.start();
   }
-  random = (min = 3, max = 5) => {
-    return min + Math.floor(Math.random() * (max - min));
+
+  init = () => {
+    if (this.chars.length) {
+      this.chars.forEach(char => {
+        char.destroy();
+        delete char.sprite;
+      });
+    }
+    this.id = this.getEmptyId();
+    this.chars = [];
+    this.chars = [this.createChar()];
+    this.chars[this.chars.length - 1].sprite.tint = Chain.tintHighlight;
+    this.tail.removeChildren();
+    this.tail.x = this.getRandomX(this.id);
+    this.tail.y = this.getRandomY();
+    this.tail.addChild(this.chars[this.chars.length - 1].sprite);
   };
-  randomChar = () => {
-    const { charSet } = this.props;
-    return charSet.bmp[this.random(0, charSet.chars.length)];
-  };
-  generate = () => {
-    return new Array(this.random()).fill(0).map(this.randomChar);
-  };
-  texture = () => {
-    const canvas = new Canvas2D(
-      this.stepSize,
-      this.stepSize * this.tail.length
-    );
-    this.tail.forEach((img, index) => {
-      canvas.ctx.drawImage(img, 0, this.stepSize * index);
+
+  createChar = () => {
+    return new Char({
+      size: this.size,
+      textures: this.textures,
+      refreshRate: this.growTimeout // 10 + Math.random() * 10
     });
-    return new PIXI.Texture(new PIXI.BaseTexture(canvas.output));
   };
+
   grow = () => {
-    if (this.tail.length + 1 <= this.props.maxLength) {
-      this.tail = [this.randomChar, ...this.tail];
+    if (this.chars.length <= this.maxLength) {
+      this.stepSizePerFrame *= 1.1;
+      this.chars.push(this.createChar());
+      const index = this.chars.length - 1;
+      this.chars[index].sprite.y =
+        this.chars.length * this.chars[index].sprite.height;
+      this.chars[index].sprite.tint = Chain.tintHighlight;
+      this.chars.forEach(({ sprite }, id) => {
+        sprite.alpha = 1 - (this.chars.length - id) / this.chars.length;
+        if (id < index) sprite.tint = Chain.tint;
+      });
+      this.tail.addChild(this.chars[index].sprite);
     }
   };
-  dropChain = () => {
-    this.sprite.y += this.stepSize;
+
+  remove = () => {
+    this.stepSizePerFrame = this.stepSizePerFrameInitial;
+    this.onRemove(this.id);
+    this.init();
   };
-  renewChars = () => {
-    this.tail = this.tail.map(this.randomChar);
-    this.sprite.texture = this.texture();
-  };
-  update = () => {
-    const timeNow = Date.now();
-    if (this.chainStart + this.props.refreshTime < timeNow) {
-      this.chainStart = timeNow;
+
+  dropChain = dt => {
+    this.tail.y += this.stepSizePerFrame * dt;
+    this.growCount += dt;
+    if (this.tail.y > this.gridHeight) {
+      this.remove();
+    }
+    if (this.growCount > this.growTimeout) {
+      this.growCount = 0;
       this.grow();
-      this.renewChars();
-      this.dropChain();
     }
   };
 }
