@@ -32,20 +32,7 @@ export class App extends Component {
       const { offsetWidth, offsetHeight } = this.display.current;
       window.addEventListener('resize', this.onResize);
 
-      this.hiroganaTextures = new Charset({ fontSize: cellSize });
-
-      this.app = new PIXI.Application({
-        width: offsetWidth,
-        height: offsetHeight,
-        backgroundColor: 0x141e14
-      });
-
-      this.grid = new Grid({
-        cellSize,
-        textures: this.hiroganaTextures,
-        width: offsetWidth,
-        height: offsetHeight
-      });
+      const hiroganaTextures = new Charset({ fontSize: cellSize });
 
       this.crtFilter = new CRTFilter({
         curvature: 0.4,
@@ -55,6 +42,25 @@ export class App extends Component {
         noise: 0.08
       });
 
+      this.app = new PIXI.Application({
+        width: offsetWidth,
+        height: offsetHeight,
+        backgroundColor: 0x141e14
+      });
+
+      const grid = new Grid({
+        cellSize,
+        textures: hiroganaTextures,
+        width: offsetWidth,
+        height: offsetHeight
+      });
+
+      const bg = new PIXI.Graphics()
+        .beginFill(0x141e14)
+        .drawRect(0, 0, offsetWidth, offsetHeight)
+        .endFill();
+        bg.cacheAsBitmap = true;
+
       this.display.current.appendChild(this.app.view);
       this.app.start();
       this.app.stage.filters = [
@@ -63,9 +69,10 @@ export class App extends Component {
           x: 2,
           y: 2
         }),
-        this.crtFilter,
+        this.crtFilter
       ];
-      this.app.stage.addChild(this.grid.container);
+      this.app.stage.addChild(bg);
+      this.app.stage.addChild(grid.container);
       this.app.ticker.add(this.gameLoop);
     }
   };
