@@ -1,6 +1,6 @@
 {
-  "name": "digital-wave",
-  "version": "0.1.0",
+  "name": "digital-rain-v3",
+  "version": "0.1.1",
   "private": true,
   "dependencies": {
     "@pixi/filter-advanced-bloom": "^2.7.0",
@@ -28,5 +28,6 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "homepage" : "http://victorpunko.ru/development/digital-rain-v3"
 }
